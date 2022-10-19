@@ -21,7 +21,7 @@ The definitions below are the same as the RedBlack module from last week, except
 (a) we use standalone deriving for Show & Foldable, and give an explicit instance of Eq
 (b) we use the alternative GADT syntax to define the Color & RBT datatypes
 (c) we only do the insert function (we won't have time to demonstrate deletion)
-(d) we've slightly refactored balance
+(d) we've slightly refactored balance and blacken
 
 Below, most of the code should be familiar.
 
@@ -104,7 +104,8 @@ data T (a :: Type) where
 We define the RBT type by distinguishing the root of the tree.
 -}
 
-newtype RBT a = Root (T a)
+data RBT a where
+  Root :: T a -> RBT a
 
 {-
 Type class instances
@@ -307,6 +308,7 @@ isRootBlack (Root t) = color t == B
 consistentBlackHeight :: RBT a -> Bool
 consistentBlackHeight (Root t) = aux t
   where
+    aux :: T a -> Bool
     aux (N _ a _ b) = blackHeight a == blackHeight b && aux a && aux b
     aux E = True
 
@@ -317,6 +319,7 @@ consistentBlackHeight (Root t) = aux t
 noRedRed :: RBT a -> Bool
 noRedRed (Root t) = aux t
   where
+    aux :: T a -> Bool
     aux (N R a _ b) = color a == B && color b == B && aux a && aux b
     aux (N B a _ b) = aux a && aux b
     aux E = True
@@ -377,7 +380,11 @@ instance (Ord a, Arbitrary a) => Arbitrary (RBT a) where
 
   shrink :: RBT a -> [RBT a]
   shrink (Root E) = []
-  shrink (Root (N _ l _ r)) = [blacken l, blacken r]
+  shrink (Root (N _ l _ r)) = [hide l, hide r]
+    where
+      hide :: T a -> RBT a
+      hide E = Root E
+      hide n@N {} = blacken n
 
 {-
 Implementation
@@ -385,8 +392,8 @@ Implementation
 -}
 
 blacken :: T a -> RBT a
-blacken E = Root E
 blacken (N _ l v r) = Root (N B l v r)
+blacken E = error "only blacken result of ins"
 
 empty :: RBT a
 empty = Root E

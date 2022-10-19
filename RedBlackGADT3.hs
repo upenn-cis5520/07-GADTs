@@ -441,10 +441,10 @@ instance (Ord a, Arbitrary a) => Arbitrary (RBT a) where
   shrink :: RBT a -> [RBT a]
   shrink (Root E) = []
   shrink (Root (N _ l _ r)) = [hide l, hide r]
-
-hide :: CT n c a -> RBT a
-hide E = Root E
-hide (N c l v r) = Root (N B l v r)
+    where
+      hide :: CT n c a -> RBT a
+      hide E = Root E
+      hide (N c l v r) = Root (N B l v r)
 
 {-
 Implementation
