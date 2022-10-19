@@ -1,10 +1,15 @@
--- Use datatypes in kinds
 {-# LANGUAGE DataKinds #-}
 {-
 ---
 fulltitle: Red Black Trees (Redux)
+date: October 19, 2022
 ---
+-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
+{-
 This module implements a persistent version of a common balanced tree
 structure: red-black trees.
 
@@ -13,21 +18,17 @@ the type checker, using this version as our starting point.
 
 The definitions below are the same as the RedBlack module from last week, except that
 
-(a) we explicitly give the definitions of Eq & Show & Foldable instead of using deriving
+(a) we use standalone deriving for Show & Foldable, and give an explicit instance of Eq
 (b) we use the alternative GADT syntax to define the Color & RBT datatypes
 (c) we only do the insert function (we won't have time to demonstrate deletion)
 (d) we've slightly refactored balance
 
 Below, most of the code should be familiar.
 
-In preparation for the demo, we'll include a few additional language features.
+In preparation for the demo, we'll include a few additional language features, for GADTs,
+using datatypes in kinds, for type-level functions (new) and to easily run all of the
+QuickCheck properties in the file.
 -}
--- Generalized Algebraic Datatypes
-{-# LANGUAGE GADTs #-}
--- easily run all QC properties in file
-{-# LANGUAGE TemplateHaskell #-}
--- Type-level functions
-{-# LANGUAGE TypeFamilies #-}
 
 module RedBlackGADT0 where
 
@@ -112,40 +113,24 @@ Type class instances
 
 -- Show instances
 
-instance Show Color where
-  show R = "R"
-  show B = "B"
+deriving instance Show Color
 
-instance Show a => Show (T a) where
-  showsPrec _d E = showString "E"
-  showsPrec d (N c l x r) =
-    showParen (d > node_prec) $
-      showString "N " . showsPrec d c
-        . showString " "
-        . showsPrec (node_prec + 1) l
-        . showString " "
-        . showsPrec (d + 1) x
-        . showString " "
-        . showsPrec (node_prec + 1) r
-    where
-      node_prec = 5
+deriving instance Show a => Show (T a)
 
-instance Show a => Show (RBT a) where
-  show (Root x) = show x
+deriving instance Show a => Show (RBT a)
 
 -- Eq instances
+
 instance Eq Color where
   R == R = True
   B == B = True
   _ == _ = False
 
--- Foldable instance
-instance Foldable T where
-  foldMap _f E = mempty
-  foldMap f (N _ l x r) = foldMap f l <> f x <> foldMap f r
+-- Foldable instances
 
-instance Foldable RBT where
-  foldMap f (Root x) = foldMap f x
+deriving instance Foldable T
+
+deriving instance Foldable RBT
 
 {-
 Simple operations
