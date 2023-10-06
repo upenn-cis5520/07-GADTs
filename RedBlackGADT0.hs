@@ -2,7 +2,7 @@
 {-
 ---
 fulltitle: Red Black Trees (Redux)
-date: October 19, 2022
+date:
 ---
 -}
 {-# LANGUAGE GADTs #-}

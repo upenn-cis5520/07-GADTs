@@ -2,7 +2,7 @@
 {-
 ---
 fulltitle: Red Black Trees (with GADTs 3)
-date: October 19, 2022
+date:
 ---
 
 This version of RedBlack trees demonstrates the use of GADTs to

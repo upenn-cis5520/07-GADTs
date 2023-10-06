@@ -2,7 +2,7 @@
 {-
 ---
 fulltitle: Red Black Trees (with GADTs 1)
-date: October 19, 2022
+date:
 ---
 -}
 {-# LANGUAGE GADTs #-}

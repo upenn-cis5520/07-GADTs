@@ -2,7 +2,7 @@
 {-
 ---
 fulltitle: GADTs
-date: October 17, 2022
+date: October 16, 2023
 ---
 -}
 {-# LANGUAGE GADTs #-}
@@ -55,16 +55,18 @@ this interpreter could either be a boolean or an integer value.
 -}
 
 oevaluate :: OExp -> Maybe (Either Int Bool)
-oevaluate (OInt i) = Just (Left i)
-oevaluate (OBool b) = Just (Right b)
-oevaluate (OAdd e1 e2) =
-  case (oevaluate e1, oevaluate e2) of
-    (Just (Left i1), Just (Left i2)) -> Just (Left (i1 + i2))
-    _ -> Nothing
-oevaluate (OIsZero e1) =
-  undefined
-oevaluate (OIf e1 e2 e3) =
-  undefined
+oevaluate = go
+  where
+    go (OInt i) = Just (Left i)
+    go (OBool b) = Just (Right b)
+    go (OAdd e1 e2) =
+      case (go e1, go e2) of
+        (Just (Left i1), Just (Left i2)) -> Just (Left (i1 + i2))
+        _ -> Nothing
+    go (OIsZero e1) =
+      undefined
+    go (OIf e1 e2 e3) =
+      undefined
 
 {-
 Ugh. That Maybe/Either combination is awkward.
@@ -154,14 +156,17 @@ Now we can give our evaluator a more exact type and write it in a much
 clearer way:
 -}
 
-evaluate :: GExp t -> t
-evaluate (GInt i) = i
-evaluate (GBool b) = b
-evaluate (GAdd e1 e2) = evaluate e1 + evaluate e2
-evaluate (GIsZero e1) =
-  undefined
-evaluate (GIf e1 e2 e3) =
-  undefined
+evaluate :: forall t. GExp t -> t
+evaluate = go
+  where
+    go :: forall t. GExp t -> t
+    go (GInt i) = i
+    go (GBool b) = b
+    go (GAdd e1 e2) = go e1 + go e2
+    go (GIsZero e1) =
+      undefined
+    go (GIf e1 e2 e3) =
+      undefined
 
 {-
 Not only that, our evaluator is more efficient [1] because it does not need to
@@ -228,6 +233,8 @@ that the list is empty.
 data List :: Flag -> Type -> Type where
   Nil :: List Empty a
   Cons :: a -> List f a -> List NonEmpty a
+
+deriving instance Show a => Show (List f a)
 
 {-
 Analogously, the type of `Cons` reflects that it creates a
@@ -331,6 +338,8 @@ The solution is to hide the size flag in an auxiliary datatype
 data OldList :: Type -> Type where
   OL :: List f a -> OldList a
 
+deriving instance Show a => Show (OldList a)
+
 {-
 To go in the other direction -- from `OldList` to `List` -- we just
 use pattern matching.  For example:
@@ -346,6 +355,9 @@ additional pattern matching.
 
 filter' :: (a -> Bool) -> List f a -> OldList a
 filter' = undefined
+
+-- >>> filter' (== 2) (Cons 1 (Cons 2 (Cons 3 Nil)))
+-- OL (Cons 2 Nil)
 
 {-
 Although these examples are simple, GADTs and DataKinds can also work in much
