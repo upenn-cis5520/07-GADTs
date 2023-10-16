@@ -130,7 +130,7 @@ Note what's happened: every constructor still returns some kind of
 something more specific than `a`.
 -}
 
--- "1 > 3 == 0"
+-- "1 + 3 == 0"
 ge1 :: GExp Bool
 ge1 = GIsZero (GAdd (GInt 1) (GInt 3))
 

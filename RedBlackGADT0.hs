@@ -2,7 +2,7 @@
 {-
 ---
 fulltitle: Red Black Trees (Redux)
-date:
+date: October 18, 2023
 ---
 -}
 {-# LANGUAGE GADTs #-}
@@ -13,7 +13,7 @@ date:
 This module implements a persistent version of a common balanced tree
 structure: red-black trees.
 
-In lecture, we will demonstrate how to  use GADTs to statically enforce the RBT invariants using
+In lecture, we will demonstrate how to use *GADTs* to statically enforce the RBT invariants using
 the type checker, using this version as our starting point.
 
 The definitions below are the same as the RedBlack module from last week, except that
@@ -90,6 +90,8 @@ memory](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree).
 A red-black tree is a binary search tree where every node is marked with a
 color (red `R` or black `B`).  For brevity, we will abbreviate the standard
 tree constructors `Empty` and `Branch` as `E` and `N`.
+
+These are the same definitions as before, but use the GADT syntax.
 -}
 
 data Color where
@@ -104,12 +106,16 @@ data T (a :: Type) where
 We define the RBT type by distinguishing the root of the tree.
 -}
 
-data RBT a where
+data RBT (a :: Type) where
   Root :: T a -> RBT a
 
 {-
 Type class instances
 --------------------
+
+When we modify the definitions above to use GADTs, we need to use "standalone deriving".
+These lines derive the usual `Show` and `Foldable` instances, as if we had
+added `deriving (Show,Foldable)` in the datatype definitions above.
 -}
 
 -- Show instances
@@ -120,18 +126,24 @@ deriving instance Show a => Show (T a)
 
 deriving instance Show a => Show (RBT a)
 
--- Eq instances
-
-instance Eq Color where
-  R == R = True
-  B == B = True
-  _ == _ = False
-
 -- Foldable instances
 
 deriving instance Foldable T
 
 deriving instance Foldable RBT
+
+{-
+We give the full definition of the equality definition for colors, so that we can
+discuss its interaction with GADTs
+-}
+
+-- Eq instance
+
+instance Eq Color where
+  (==) :: Color -> Color -> Bool
+  R == R = True
+  B == B = True
+  _ == _ = False
 
 {-
 Simple operations
@@ -152,6 +164,7 @@ the same elements.
 -}
 
 instance Eq a => Eq (RBT a) where
+  (==) :: Eq a => RBT a -> RBT a -> Bool
   t1 == t2 = elements t1 == elements t2
 
 {-
@@ -160,8 +173,9 @@ Every tree has a color, determined by the following function.
 
 -- | access the color of the tree
 color :: T a -> Color
-color (N c _ _ _) = c
-color E = B
+color t = case t of
+  (N c _ _ _) -> c
+  E -> B
 
 {-
 We can also calculate the "black height" of a tree -- i.e. the number of black
@@ -171,8 +185,9 @@ same for every path in the tree, so we only need to look at one side.
 
 -- | calculate the black height of the tree
 blackHeight :: T a -> Int
-blackHeight E = 1
-blackHeight (N c a _ _) = blackHeight a + (if c == B then 1 else 0)
+blackHeight t = case t of
+  E -> 1
+  (N c a _ _) -> blackHeight a + (if c == B then 1 else 0)
 
 {-
 Implementation
@@ -392,8 +407,9 @@ Implementation
 -}
 
 blacken :: T a -> RBT a
-blacken (N _ l v r) = Root (N B l v r)
-blacken E = error "only blacken result of ins"
+blacken t = case t of
+  (N _ l v r) -> Root (N B l v r)
+  E -> error "only blacken result of ins"
 
 empty :: RBT a
 empty = Root E
