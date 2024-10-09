@@ -2,14 +2,14 @@
 {-
 ---
 fulltitle: GADTs
-date: October 16, 2023
+date: October 14, 2025
 ---
+
+Today we are going to talk about two of my favorite GHC extensions. These extensions
+are not part of the core language, so they must be explicitly enabled with
+`LANGUAGE` pragmas (see above) in any module that uses them.
 -}
 {-# LANGUAGE GADTs #-}
-
-{-
-Today we are going to talk about two of my favorite GHC extensions.
--}
 
 module GADTs where
 
@@ -17,7 +17,7 @@ import Data.Kind (Type)
 import Test.HUnit (Test, (~?=))
 
 {-
-*Generalized Algebraic Datatypes*, or GADTs, are one of GHC's more unusual
+\*Generalized Algebraic Datatypes*, or GADTs, are one of GHC's more unusual
 extensions to Haskell.  In this module, we'll introduce GADTs and related
 features of GHC's type system.
 
@@ -48,6 +48,10 @@ oe1 = OAdd (OInt 1) (OInt 3)
 -- The expression "if (3 + -3) == 0 then 3 else 4"
 oe2 :: OExp
 oe2 = OIf (OIsZero (OAdd (OInt 3) (OInt (-3)))) (OInt 3) (OInt 4)
+
+-- Make an expression for "if true then false else true"
+oe3 :: OExp
+oe3 = undefined
 
 {-
 And here is an evaluator for these expressions. Note that the result type of
@@ -96,11 +100,13 @@ bad_oe2 = OIf (OInt 1) (OBool True) (OInt 3)
 A Typed Expression Evaluator
 ----------------------------
 
-As a first step, let's rewrite the definition of the expression
-datatype in so-called "GADT syntax":
+Let's revise our data structure so that it cannot represent terms sucha as `bad_oe1`.
+
+As a first step, we rewrite the definition of the expression
+datatype in so-called "GADT syntax".
 -}
 
-data SExp where
+data SExp :: Type where
   SInt :: Int -> SExp
   SBool :: Bool -> SExp
   SAdd :: SExp -> SExp -> SExp
@@ -108,13 +114,15 @@ data SExp where
   SIf :: SExp -> SExp -> SExp -> SExp
 
 {-
-We haven't changed anything yet -- this version means exactly the same as the
-definition above.  The change of syntax makes the types of the constructors --
-in particular, their result type -- more explicit in their declarations.  Note
-that, here, the result type of every constructor is `SExp`, and this makes
-sense because they all belong to the `SExp` datatype.
+We haven't changed anything yet (other than the names). This version means
+exactly the same as the definition above.  The change of syntax makes
+the types of the constructors -- in particular, their result type -- more
+explicit in their declarations.  Note that, here, the result type of every
+constructor is `SExp`, and this makes sense because they all belong to
+the `SExp` datatype.
 
-Now let's refine it:
+Now let's refine our datatype, adding a *type index*. We add a new parameter
+to the datatype so that its kind is now `Type -> Type` instead of `Type`.
 -}
 
 data GExp :: Type -> Type where
@@ -126,8 +134,16 @@ data GExp :: Type -> Type where
 
 {-
 Note what's happened: every constructor still returns some kind of
-`GExp`, but the type parameter to `GExp` is sometimes refined to
-something more specific than `a`.
+`GExp`, but the type parameter to `GExp` varies. For literal integers
+(`GInt`) this type parameter tells us that the expression will evaluate
+to an `Int`. But for literal booleans (`GBool`), the result of evaluation should
+be a `Bool`. The `GAdd` constructor requires that its two subterms produce
+integers and itself produces an integer. Similarly the `GIsZero` constructor
+requires an integer, but produces a boolean. Finally the `GIf` constructor
+requires a boolean for the first subterm (the condition of the `if`) but
+is also polymorphic. Both the `then` and `else` subterms can either be
+`Bool` or `Int`, but they should match and the result of the entire expression
+is the same.
 -}
 
 -- "1 + 3 == 0"
@@ -170,7 +186,9 @@ evaluate = go
 
 {-
 Not only that, our evaluator is more efficient [1] because it does not need to
-wrap the result in the `Maybe` and `Either` datatypes.
+wrap the result in the `Either` datatypes. This means that during execution,
+the evaluator does not need to pattern match the `Either` type: it can access the
+result of the recursive call immediately.
 
 GADTs with DataKinds
 --------------------
@@ -198,14 +216,14 @@ type U :: Bool -> Type
 data U a = MkU
 
 {-
-That means that the kind of `U` is `Bool -> Type`.  In other words, both `U 'True` [2]
+That means that the kind of `U` is `Bool -> Type`.  In other words, both `U True`
 and `U 'False` are valid types for `MkU` (and different from each other).
 -}
 
-exUT :: U 'True
+exUT :: U True
 exUT = MkU
 
-exUF :: U 'False
+exUF :: U False
 exUF = MkU
 
 -- This line doesn't type check because (==) requires arguments with the same types.
@@ -234,7 +252,7 @@ data List :: Flag -> Type -> Type where
   Nil :: List Empty a
   Cons :: a -> List f a -> List NonEmpty a
 
-deriving instance Show a => Show (List f a)
+deriving instance (Show a) => Show (List f a)
 
 {-
 Analogously, the type of `Cons` reflects that it creates a
@@ -250,10 +268,10 @@ the _type_ expression `List Empty a`.
 are allowed to appear at the type level.)
 -}
 
-ex0 :: List 'Empty Int
+ex0 :: List Empty Int
 ex0 = Nil
 
-ex1 :: List 'NonEmpty Int
+ex1 :: List NonEmpty Int
 ex1 = Cons 1 (Cons 2 (Cons 3 Nil))
 
 {-
@@ -276,8 +294,8 @@ allowed!)
 Compare this definition to the unsafe version of head.
 -}
 
---unsafeHd :: [a] -> a
---unsafeHd (x : _) = x
+-- unsafeHd :: [a] -> a
+-- unsafeHd (x : _) = x
 
 -- >>> unsafeHd [1,2]
 
@@ -338,7 +356,7 @@ The solution is to hide the size flag in an auxiliary datatype
 data OldList :: Type -> Type where
   OL :: List f a -> OldList a
 
-deriving instance Show a => Show (OldList a)
+deriving instance (Show a) => Show (OldList a)
 
 {-
 To go in the other direction -- from `OldList` to `List` -- we just
@@ -370,15 +388,15 @@ Lecture notes
 post](https://blog.janestreet.com/why-gadts-matter-for-performance/) about how
 Jane Street uses them to optimize their code.
 
-[2] When data constructors are used in types, we often add a `'` in front of
+[2] When data constructors are used in types, we can add a `'` in front of
 them. This mark tells GHC that it should be looking for a data constructor
-(like `True`) instead of a type constructor (like `Bool`). GHC won't complain
-if you leave this tick off as long as there is no overloading of data
+(like `True`) instead of a type constructor (like `Bool`). GHC allows
+you to leave this tick off as long as there is no overloading of data
 constructor and type constructor names. However, consider `[]`, and `()`, and
 `(,)`. These all stand for both data constructors (i.e. the empty list, the
 unit value, and the pairing constructor) and type constructors (i.e. the list
 type constructor, the unit type, and the pairing type constructor). So if you
-are using these to index GADTS, you must always use a tick when you mean the
+are using these values to index GADTS, you must always use a tick when you mean the
 data constructor.
 
 [3] [Galois](https://galois.com/), a Haskell-based company, makes heavy use of

@@ -18,6 +18,13 @@ library
   build-depends:       base >= 4.15
                      , HUnit >= 1.6
                      , QuickCheck >= 2.14
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
+                     , singletons
+                     , singletons-base
+                     , array
+                     , pretty
+                     , orthotope
   default-language:    GHC2021
   ghc-options:       -Wincomplete-patterns -Wno-orphans -Wno-unticked-promoted-constructors
   default-extensions:

@@ -2,7 +2,6 @@
 {-
 ---
 fulltitle: Red Black Trees (with GADTs 2)
-date:
 ---
 -}
 {-# LANGUAGE GADTs #-}
@@ -13,10 +12,10 @@ date:
 This version of RedBlack trees demonstrates the use of GADTs to
 statically verify all four RedBlack tree invariants.
 
-* In this version, the type system enforces that the root is black
+\* In this version, the type system enforces that the root is black
   by using a "singleton" type.
 
-* In this version, the type system enforces that red nodes have
+\* In this version, the type system enforces that red nodes have
   black children
 
 The definitions below are the same as the RedBlack module from last week, except that
@@ -41,7 +40,7 @@ We'll make the following standard library functions available for this
 implementation.
 -}
 
-import qualified Data.Foldable as Foldable
+import Data.Foldable qualified as Foldable
 import Data.Kind (Type)
 {-
 And we'll use QuickCheck for testing.
@@ -125,7 +124,7 @@ A "colored" tree
 
 data CT c a where
   E :: CT Black a
-  N :: Valid c c1 c2 => SColor c -> CT c1 a -> a -> CT c2 a -> CT c a
+  N :: (Valid c c1 c2) => SColor c -> CT c1 a -> a -> CT c2 a -> CT c a
 
 {-
 A type class that statically guarantees that Red nodes have Black children.
@@ -156,9 +155,9 @@ deriving instance Show Color
 
 deriving instance (Show (SColor c))
 
-deriving instance Show a => Show (CT c a)
+deriving instance (Show a) => Show (CT c a)
 
-deriving instance Show a => Show (RBT a)
+deriving instance (Show a) => Show (RBT a)
 
 -- Eq instances
 
@@ -191,7 +190,7 @@ Instead, we will define two red-black trees to be equal when they contain
 the same elements.
 -}
 
-instance Eq a => Eq (RBT a) where
+instance (Eq a) => Eq (RBT a) where
   t1 == t2 = elements t1 == elements t2
 
 {-
@@ -235,15 +234,15 @@ about colors.
 
   4. Red nodes have black children
 
-* The first invariant is true by definition of the `color` function above. The
+\* The first invariant is true by definition of the `color` function above. The
   others we will have to maintain as we implement the various tree
   operations.
 
-* Together, these invariants imply that every red-black tree is "approximately
+\* Together, these invariants imply that every red-black tree is "approximately
   balanced", in the sense that the longest path to an `E` is no more than
   twice the length of the shortest.
 
-* From this balance property, it follows that the `member`, `insert` and
+\* From this balance property, it follows that the `member`, `insert` and
     `delete` operations will run in `O(log_2 n)` time.
 
 Sample Trees
@@ -318,7 +317,7 @@ that it is equivalent [4].
 -}
 
 -- | A red-black tree is a BST if an inorder traversal is strictly ordered.
-isBST :: Ord a => RBT a -> Bool
+isBST :: (Ord a) => RBT a -> Bool
 isBST = orderedBy (<) . elements
 
 {-
@@ -370,7 +369,7 @@ noRedRed (Root t) = aux t
 We can combine the predicates together using the following definition:
 -}
 
-valid :: Ord a => RBT a -> Bool
+valid :: (Ord a) => RBT a -> Bool
 valid t = isRootBlack t && consistentBlackHeight t && noRedRed t && isBST t
 
 {-
@@ -440,23 +439,23 @@ blacken (HN _ l v r) = Root (N B l v r)
 empty :: RBT a
 empty = Root E
 
-member :: Ord a => a -> RBT a -> Bool
+member :: (Ord a) => a -> RBT a -> Bool
 member x0 (Root t) = aux x0 t
   where
-    aux :: Ord a => a -> CT c a -> Bool
+    aux :: (Ord a) => a -> CT c a -> Bool
     aux x E = False
     aux x (N _ a y b)
       | x < y = aux x a
       | x > y = aux x b
       | otherwise = True
 
-insert :: Ord a => a -> RBT a -> RBT a
+insert :: (Ord a) => a -> RBT a -> RBT a
 insert x (Root t) = blacken (ins x t)
 
 data HT a where
   HN :: SColor c1 -> CT c2 a -> a -> CT c3 a -> HT a
 
-ins :: Ord a => a -> CT c a -> HT a
+ins :: (Ord a) => a -> CT c a -> HT a
 ins x E = HN R E x E
 ins x s@(N c a y b)
   | x < y = balanceL c (ins x a) y b
@@ -522,7 +521,7 @@ balanceR c a x (HN R b y d) = error ("no case for " ++ show (color b) ++ " " ++ 
 What properties should we test with QuickCheck?
 ---------------------------------------------
 
-* Validity Testing
+\* Validity Testing
 
 We already have defined `prop_Valid` which tests whether its argument is a
 valid red-black tree. When we use this with the `Arbitrary` instance that we
@@ -537,7 +536,7 @@ prop_ShrinkValid :: RBT A -> Property
 prop_ShrinkValid t = conjoin (map prop_Valid (shrink t))
 
 {-
-* Metamorphic Testing
+\* Metamorphic Testing
 
 The fact that we are statically tetsing
 -}

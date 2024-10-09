@@ -2,14 +2,9 @@
 {-
 ---
 fulltitle: Red Black Trees (Redux)
-date: October 18, 2023
+date: October 16, 2024
 ---
--}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 
-{-
 This module implements a persistent version of a common balanced tree
 structure: red-black trees.
 
@@ -28,7 +23,11 @@ Below, most of the code should be familiar.
 In preparation for the demo, we'll include a few additional language features, for GADTs,
 using datatypes in kinds, for type-level functions (new) and to easily run all of the
 QuickCheck properties in the file.
+
 -}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module RedBlackGADT0 where
 
@@ -37,7 +36,7 @@ We'll make the following standard library functions available for this
 implementation.
 -}
 
-import qualified Data.Foldable as Foldable
+import Data.Foldable qualified as Foldable
 import Data.Kind (Type)
 {-
 And we'll use QuickCheck for testing.
@@ -122,9 +121,9 @@ added `deriving (Show,Foldable)` in the datatype definitions above.
 
 deriving instance Show Color
 
-deriving instance Show a => Show (T a)
+deriving instance (Show a) => Show (T a)
 
-deriving instance Show a => Show (RBT a)
+deriving instance (Show a) => Show (RBT a)
 
 -- Foldable instances
 
@@ -163,8 +162,8 @@ Instead, we will define two red-black trees to be equal when they contain
 the same elements.
 -}
 
-instance Eq a => Eq (RBT a) where
-  (==) :: Eq a => RBT a -> RBT a -> Bool
+instance (Eq a) => Eq (RBT a) where
+  (==) :: (Eq a) => RBT a -> RBT a -> Bool
   t1 == t2 = elements t1 == elements t2
 
 {-
@@ -210,15 +209,15 @@ about colors.
 
   4. Red nodes have black children
 
-* The first invariant is true by definition of the `color` function above. The
+\* The first invariant is true by definition of the `color` function above. The
   others we will have to maintain as we implement the various tree
   operations.
 
-* Together, these invariants imply that every red-black tree is "approximately
+\* Together, these invariants imply that every red-black tree is "approximately
   balanced", in the sense that the longest path to an `E` is no more than
   twice the length of the shortest.
 
-* From this balance property, it follows that the `member`, `insert` and
+\* From this balance property, it follows that the `member`, `insert` and
     `delete` operations will run in `O(log_2 n)` time.
 
 Sample Trees
@@ -291,7 +290,7 @@ that it is equivalent [4].
 -}
 
 -- | A red-black tree is a BST if an inorder traversal is strictly ordered.
-isBST :: Ord a => RBT a -> Bool
+isBST :: (Ord a) => RBT a -> Bool
 isBST = orderedBy (<) . elements
 
 {-
@@ -343,7 +342,7 @@ noRedRed (Root t) = aux t
 We can combine the predicates together using the following definition:
 -}
 
-valid :: Ord a => RBT a -> Bool
+valid :: (Ord a) => RBT a -> Bool
 valid t = isRootBlack t && consistentBlackHeight t && noRedRed t && isBST t
 
 {-
@@ -414,20 +413,20 @@ blacken t = case t of
 empty :: RBT a
 empty = Root E
 
-member :: Ord a => a -> RBT a -> Bool
+member :: (Ord a) => a -> RBT a -> Bool
 member x0 (Root t) = aux x0 t
   where
-    aux :: Ord a => a -> T a -> Bool
+    aux :: (Ord a) => a -> T a -> Bool
     aux x E = False
     aux x (N _ a y b)
       | x < y = aux x a
       | x > y = aux x b
       | otherwise = True
 
-insert :: Ord a => a -> RBT a -> RBT a
+insert :: (Ord a) => a -> RBT a -> RBT a
 insert x (Root t) = blacken (ins x t)
 
-ins :: Ord a => a -> T a -> T a
+ins :: (Ord a) => a -> T a -> T a
 ins x E = N R E x E
 ins x s@(N c a y b)
   | x < y = balanceL c (ins x a) y b
@@ -479,7 +478,7 @@ be easier for us to augment with more precise types.
 What properties should we test with QuickCheck?
 ---------------------------------------------
 
-* Validity Testing
+\* Validity Testing
 
 We already have defined `prop_Valid` which tests whether its argument is a
 valid red-black tree. When we use this with the `Arbitrary` instance that we
@@ -494,7 +493,7 @@ prop_ShrinkValid :: RBT A -> Property
 prop_ShrinkValid t = conjoin (map prop_Valid (shrink t))
 
 {-
-* Metamorphic Testing
+\* Metamorphic Testing
 
 The fact that we are statically tetsing
 -}
