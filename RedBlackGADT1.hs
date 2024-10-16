@@ -1,10 +1,12 @@
-{-# LANGUAGE DataKinds #-}
+
 {-
 ---
 fulltitle: Red Black Trees (with GADTs 1)
+date: October 16, 2024
 ---
 -}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -178,6 +180,7 @@ the same elements.
 -}
 
 instance (Eq a) => Eq (RBT a) where
+  (==) :: (Eq a) => RBT a -> RBT a -> Bool
   t1 == t2 = elements t1 == elements t2
 
 {-
@@ -306,10 +309,6 @@ that it is equivalent [4].
 -- | A red-black tree is a BST if an inorder traversal is strictly ordered.
 isBST :: (Ord a) => RBT a -> Bool
 isBST = orderedBy (<) . elements
-
-{-
->
--}
 
 -- | Are the elements in the list ordered by the provided operation?
 orderedBy :: (a -> a -> Bool) -> [a] -> Bool
@@ -457,9 +456,6 @@ The original `balance` function looked like this:
 {-
 balance (N B (N R (N R a x b) y c) z d) = N R (N B a x b) y (N B c z d)
 balance (N B (N R a x (N R b y c)) z d) = N R (N B a x b) y (N B c z d)
-{-
->
--}
 
 balance (N B a x (N R (N R b y c) z d)) = N R (N B a x b) y (N B c z d)
 balance (N B a x (N R b y (N R c z d))) = N R (N B a x b) y (N B c z d)
@@ -510,8 +506,6 @@ prop_ShrinkValid t = conjoin (map prop_Valid (shrink t))
 
 {-
 \* Metamorphic Testing
-
-The fact that we are statically tetsing
 -}
 
 prop_InsertEmpty :: A -> Bool
@@ -520,10 +514,6 @@ prop_InsertEmpty x = elements (insert x empty) == [x]
 prop_InsertInsert :: A -> A -> RBT A -> Bool
 prop_InsertInsert x y t =
   insert x (insert y t) == insert y (insert x t)
-
-{-
->
--}
 
 prop_MemberEmpty :: A -> Bool
 prop_MemberEmpty x = not (member x empty)

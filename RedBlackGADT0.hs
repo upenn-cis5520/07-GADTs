@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 {-
 ---
 fulltitle: Red Black Trees (Redux)
@@ -23,8 +22,8 @@ Below, most of the code should be familiar.
 In preparation for the demo, we'll include a few additional language features, for GADTs,
 using datatypes in kinds, for type-level functions (new) and to easily run all of the
 QuickCheck properties in the file.
-
 -}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -293,10 +292,6 @@ that it is equivalent [4].
 isBST :: (Ord a) => RBT a -> Bool
 isBST = orderedBy (<) . elements
 
-{-
->
--}
-
 -- | Are the elements in the list ordered by the provided operation?
 orderedBy :: (a -> a -> Bool) -> [a] -> Bool
 orderedBy op (x : y : xs) = x `op` y && orderedBy op (y : xs)
@@ -388,10 +383,6 @@ instance (Ord a, Arbitrary a) => Arbitrary (RBT a) where
   arbitrary :: Gen (RBT a)
   arbitrary = foldr insert empty <$> (arbitrary :: Gen [a])
 
-  {-
-  >
-  -}
-
   shrink :: RBT a -> [RBT a]
   shrink (Root E) = []
   shrink (Root (N _ l _ r)) = [hide l, hide r]
@@ -441,9 +432,6 @@ The original `balance` function looked like this:
 {-
 balance (N B (N R (N R a x b) y c) z d) = N R (N B a x b) y (N B c z d)
 balance (N B (N R a x (N R b y c)) z d) = N R (N B a x b) y (N B c z d)
-{-
->
--}
 
 balance (N B a x (N R (N R b y c) z d)) = N R (N B a x b) y (N B c z d)
 balance (N B a x (N R b y (N R c z d))) = N R (N B a x b) y (N B c z d)
@@ -464,12 +452,12 @@ the right, then we should balance on the right.
 balanceL :: Color -> T a -> a -> T a -> T a
 balanceL B (N R (N R a x b) y c) z d = N R (N B a x b) y (N B c z d)
 balanceL B (N R a x (N R b y c)) z d = N R (N B a x b) y (N B c z d)
-balanceL col a x b = N col a x b
+balanceL c a x b = N c a x b
 
 balanceR :: Color -> T a -> a -> T a -> T a
 balanceR B a x (N R (N R b y c) z d) = N R (N B a x b) y (N B c z d)
 balanceR B a x (N R b y (N R c z d)) = N R (N B a x b) y (N B c z d)
-balanceR col a x b = N col a x b
+balanceR c a x b = N c a x b
 
 {-
 This version is slightly more efficient than the previous version and will
@@ -494,8 +482,6 @@ prop_ShrinkValid t = conjoin (map prop_Valid (shrink t))
 
 {-
 \* Metamorphic Testing
-
-The fact that we are statically tetsing
 -}
 
 prop_InsertEmpty :: A -> Bool
@@ -504,10 +490,6 @@ prop_InsertEmpty x = elements (insert x empty) == [x]
 prop_InsertInsert :: A -> A -> RBT A -> Bool
 prop_InsertInsert x y t =
   insert x (insert y t) == insert y (insert x t)
-
-{-
->
--}
 
 prop_MemberEmpty :: A -> Bool
 prop_MemberEmpty x = not (member x empty)

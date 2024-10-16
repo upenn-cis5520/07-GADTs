@@ -2,6 +2,7 @@
 {-
 ---
 fulltitle: Red Black Trees (with GADTs 3)
+date: October 16, 2024
 ---
 
 This version of RedBlack trees demonstrates the use of GADTs to
@@ -338,10 +339,6 @@ that it is equivalent [4].
 isBST :: (Ord a) => RBT a -> Bool
 isBST = orderedBy (<) . elements
 
-{-
->
--}
-
 -- | Are the elements in the list ordered by the provided operation?
 orderedBy :: (a -> a -> Bool) -> [a] -> Bool
 orderedBy op (x : y : xs) = x `op` y && orderedBy op (y : xs)
@@ -433,10 +430,6 @@ instance (Ord a, Arbitrary a) => Arbitrary (RBT a) where
   arbitrary :: Gen (RBT a)
   arbitrary = foldr insert empty <$> (arbitrary :: Gen [a])
 
-  {-
-  >
-  -}
-
   shrink :: RBT a -> [RBT a]
   shrink (Root E) = []
   shrink (Root (N _ l _ r)) = [hide l, hide r]
@@ -488,9 +481,6 @@ The original `balance` function looked like this:
 {-
 balance (N B (N R (N R a x b) y c) z d) = N R (N B a x b) y (N B c z d)
 balance (N B (N R a x (N R b y c)) z d) = N R (N B a x b) y (N B c z d)
-{-
->
--}
 
 balance (N B a x (N R (N R b y c) z d)) = N R (N B a x b) y (N B c z d)
 balance (N B a x (N R b y (N R c z d))) = N R (N B a x b) y (N B c z d)
@@ -554,8 +544,6 @@ prop_ShrinkValid t = conjoin (map prop_Valid (shrink t))
 
 {-
 \* Metamorphic Testing
-
-The fact that we are statically tetsing
 -}
 
 prop_InsertEmpty :: A -> Bool
