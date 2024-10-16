@@ -1,4 +1,4 @@
-
+{-# LANGUAGE DataKinds #-}
 {-
 ---
 fulltitle: Red Black Trees (with GADTs 1)
@@ -6,7 +6,6 @@ date: October 16, 2024
 ---
 -}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -121,9 +120,9 @@ A "colored" tree
 
 -}
 
-data CT c a where
-  E :: CT Black a
-  N :: SColor c -> CT c1 a -> a -> CT c2 a -> CT c a
+data T c a where
+  E :: T Black a
+  N :: SColor c -> T c1 a -> a -> T c2 a -> T c a
 
 {-
 
@@ -131,7 +130,7 @@ We define the RBT type by distinguishing the root of the tree.
 -}
 
 data RBT a where
-  Root :: CT Black a -> RBT a
+  Root :: T Black a -> RBT a
 
 {-
 Type class instances
@@ -144,7 +143,7 @@ deriving instance Show Color
 
 deriving instance (Show (SColor c))
 
-deriving instance (Show a) => Show (CT c a)
+deriving instance (Show a) => Show (T c a)
 
 deriving instance (Show a) => Show (RBT a)
 
@@ -157,7 +156,7 @@ instance Eq Color where
 
 -- Foldable instances
 
-deriving instance Foldable (CT c)
+deriving instance Foldable (T c)
 
 deriving instance Foldable RBT
 
@@ -188,7 +187,7 @@ Every tree has a color, determined by the following function.
 -}
 
 -- | access the color of the tree
-color :: CT c a -> SColor c
+color :: T c a -> SColor c
 color (N c _ _ _) = c
 color E = B
 
@@ -199,7 +198,7 @@ same for every path in the tree, so we only need to look at one side.
 -}
 
 -- | calculate the black height of the tree
-blackHeight :: CT c a -> Int
+blackHeight :: T c a -> Int
 blackHeight E = 1
 blackHeight (N c a _ _) = blackHeight a + (if c %== B then 1 else 0)
 
@@ -335,7 +334,7 @@ isRootBlack (Root t) = color t %== B
 consistentBlackHeight :: RBT a -> Bool
 consistentBlackHeight (Root t) = aux t
   where
-    aux :: CT c a -> Bool
+    aux :: T c a -> Bool
     aux (N _ a _ b) = blackHeight a == blackHeight b && aux a && aux b
     aux E = True
 
@@ -346,7 +345,7 @@ consistentBlackHeight (Root t) = aux t
 noRedRed :: RBT a -> Bool
 noRedRed (Root t) = aux t
   where
-    aux :: CT c a -> Bool
+    aux :: T c a -> Bool
     aux (N R a _ b) = color a %== B && color b %== B && aux a && aux b
     aux (N B a _ b) = aux a && aux b
     aux E = True
@@ -401,15 +400,11 @@ instance (Ord a, Arbitrary a) => Arbitrary (RBT a) where
   arbitrary :: Gen (RBT a)
   arbitrary = foldr insert empty <$> (arbitrary :: Gen [a])
 
-  {-
-  >
-  -}
-
   shrink :: RBT a -> [RBT a]
   shrink (Root E) = []
   shrink (Root (N _ l _ r)) = [hide l, hide r]
     where
-      hide :: CT c a -> RBT a
+      hide :: T c a -> RBT a
       hide E = Root E
       hide (N c l v r) = Root (N B l v r)
 
@@ -428,7 +423,7 @@ empty = Root E
 member :: (Ord a) => a -> RBT a -> Bool
 member x0 (Root t) = aux x0 t
   where
-    aux :: (Ord a) => a -> CT c a -> Bool
+    aux :: (Ord a) => a -> T c a -> Bool
     aux x E = False
     aux x (N _ a y b)
       | x < y = aux x a
@@ -439,9 +434,9 @@ insert :: (Ord a) => a -> RBT a -> RBT a
 insert x (Root t) = blacken (ins x t)
 
 data HT a where
-  HN :: SColor c1 -> CT c2 a -> a -> CT c3 a -> HT a
+  HN :: SColor c1 -> T c2 a -> a -> T c3 a -> HT a
 
-ins :: (Ord a) => a -> CT c a -> HT a
+ins :: (Ord a) => a -> T c a -> HT a
 ins x E = HN R E x E
 ins x s@(N c a y b)
   | x < y = balanceL c (ins x a) y b
@@ -473,12 +468,12 @@ inserted on the left, then we should balance on the left. If we inserted on
 the right, then we should balance on the right.
 -}
 
-balanceL :: SColor c1 -> HT a -> a -> CT c2 a -> HT a
+balanceL :: SColor c1 -> HT a -> a -> T c2 a -> HT a
 balanceL B (HN R (N R a x b) y c) z d = HN R (N B a x b) y (N B c z d)
 balanceL B (HN R a x (N R b y c)) z d = HN R (N B a x b) y (N B c z d)
 balanceL c (HN c1 a x b) z d = HN c (N c1 a x b) z d
 
-balanceR :: SColor c1 -> CT c2 a -> a -> HT a -> HT a
+balanceR :: SColor c1 -> T c2 a -> a -> HT a -> HT a
 balanceR B a x (HN R (N R b y c) z d) = HN R (N B a x b) y (N B c z d)
 balanceR B a x (HN R b y (N R c z d)) = HN R (N B a x b) y (N B c z d)
 balanceR c a x (HN c1 b y d) = HN c a x (N c1 b y d)
